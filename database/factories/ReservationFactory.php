@@ -22,7 +22,7 @@ class ReservationFactory extends Factory
             'office_id' => Office::factory(),
             'price' => $this->faker->numberBetween(10_000, 20_000),
             'status' => Reservation::ACTIVE_STATUS,
-            'start_day' => now()->addDay(1)->format('Y-m-d'),
+            'start_date' => now()->addDay(1)->format('Y-m-d'),
             'end_date' => now()->addDay(5)->format('Y-m-d'),
         ];
     }

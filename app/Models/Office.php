@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -27,7 +28,7 @@ class Office extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function reservation()
+    public function reservations()
     {
         return $this->hasMany(Reservation::class);
     }
@@ -35,5 +36,27 @@ class Office extends Model
     public function image()
     {
         return $this->morphMany(Image::class, 'resource');
+    }
+
+    public function tags()
+    {
+        return $this->belongsToMany(Tag::class, 'offices_tags');
+    }
+
+    public function images()
+    {
+        return $this->morphMany(Image::class, 'resource');
+    }
+
+    public function scopeNearestTo(Builder $builder, $lat, $lng)
+    {
+        //without specifing the select() the selectRaw will override the default which is by default
+        //select all and will return only the distance with empty arrays of the other data.
+        return $builder->select()
+                ->selectRaw(
+                'SQRT(POW(69.1 * (lat - ?), 2) + POW(69.1 * (? - lng) * COS(lat / 57.3), 2)) AS distance',
+                [$lat, $lng]
+               
+        )->orderBy('distance');
     }
 }

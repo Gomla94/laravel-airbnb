@@ -17,14 +17,14 @@ class OfficeFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'title' => $this->faker->sentence,
+            'name' => $this->faker->sentence,
             'description' => $this->faker->paragraph,
             'lat' => $this->faker->latitude,
             'lng' => $this->faker->longitude,
-            'address-line_1' => $this->faker->address,
+            'address_line_1' => $this->faker->address,
             'approval_status' => Office::APPROVED_STATUS,
             'hidden' => false,
-            'price_per-day' => $this->faker->numberBetween(1_000, 2_000),
+            'price_per_day' => $this->faker->numberBetween(1_000, 2_000),
             'monthly_discount' => 0
         ];
     }
