@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 class OfficeResource extends JsonResource
 {
@@ -14,6 +15,13 @@ class OfficeResource extends JsonResource
      */
     public function toArray($request)
     {
-        return parent::toArray($request);
+        return [
+                'user' => UserResource::make($this->user),
+                'images' => ImageResource::collection($this->images),
+                'tags' => TagResource::collection($this->tags),
+                $this->merge(Arr::except(Parent::toArray($request), [
+                'created_at', 'updated_at', 'deleted_at', 'user_id'
+            ]))
+        ];
     }
 }
