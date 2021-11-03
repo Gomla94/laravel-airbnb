@@ -23,8 +23,10 @@ class OfficeController extends Controller
     public function index()
     {
         $offices = Office::query()
-                ->where('hidden', false)
-                ->where('approval_status', Office::APPROVED_STATUS)
+                ->when(request('user_id') && auth()->user() && request('user_id') == auth()->id(),
+                    fn($builder) => $builder,
+                    fn($builder) => $builder->where('hidden', false)->where('approval_status', Office::APPROVED_STATUS)
+                )
                 ->when(request('user_id'), fn($builder) => $builder->whereUserId(request('user_id')))
                 ->when(request('visitor_id'), fn(Builder $builder) => $builder->whereRelation('reservations', 'user_id', '=', request('visitor_id')))
                 ->when(request('lat') && request('lng'), 
@@ -34,6 +36,7 @@ class OfficeController extends Controller
                 ->withCount(['reservations' => fn($builder) => $builder->where('status', Reservation::ACTIVE_STATUS)])
                 ->paginate(20);
         
+
         return OfficeResource::collection($offices);
     }
 
@@ -46,7 +49,7 @@ class OfficeController extends Controller
 
     public function create(Request $request)
     {
-        //session authentication the tkoneCan methos will always return true, if the incoming authenticated
+        //session authentication the tokenCan methos will always return true, if the incoming authenticated
         //request if from first party spa (session authentication)
 
         abort_unless(auth()->user()->tokenCan('office.create'), 
@@ -69,6 +72,7 @@ class OfficeController extends Controller
             return $office;
         });
         
+        Notification::send(User::where('is_admin', true)->get(), new OfficePendingApproval($office));
 
         return OfficeResource::make($office);
     }
@@ -99,7 +103,7 @@ class OfficeController extends Controller
             return $office;
         });
         
-        Notification::send(User::firstWhere('name', 'Ahmed'), new OfficePendingApproval($office));
+        Notification::send(User::where('is_admin', true)->get(), new OfficePendingApproval($office));
 
         return OfficeResource::make($office);
     }

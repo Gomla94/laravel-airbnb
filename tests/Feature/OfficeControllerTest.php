@@ -45,6 +45,21 @@ class OfficeControllerTest extends TestCase
     }
 
     /** @test */
+
+    public function itListsHiddenAndPendingOfficesWhenFilteredByCurrentAuthUser()
+    {
+        $user = User::factory()->create();
+        Office::factory(3)->for($user)->create();
+        Office::factory()->pending()->for($user)->create();
+        Office::factory()->hidden()->for($user)->create();
+        $this->actingAs($user);
+
+        $response = $this->get('/api/offices?user_id='.$user->id);
+        $response->assertJsonCount(5, 'data');
+    }
+
+
+    /** @test */
     public function itFiltersOfficesByHosts()
     {
        Office::factory(3)->create();
@@ -83,7 +98,6 @@ class OfficeControllerTest extends TestCase
         $office->images()->create(['path' => 'image.path']);
 
         $response = $this->get('/api/offices');
-
         $response->assertOk();
         $this->assertIsArray($response->json('data')[0]['tags']);
         $this->assertCount(1, $response->json('data')[0]['tags']);
@@ -169,7 +183,8 @@ class OfficeControllerTest extends TestCase
     /** @test */
     public function itCreatesOffice()
     {
-        $user = User::factory()->createQuietly();
+        Notification::fake();
+        $user = User::factory()->createQuietly(['is_admin' => true]);
         $this->actingAs($user);
         $tag = Tag::factory()->create();
         $tag2 = Tag::factory()->create();
@@ -188,6 +203,8 @@ class OfficeControllerTest extends TestCase
                     ->assertJsonPath('data.name', 'office1')
                     ->assertJsonCount(2, 'data.tags')
                     ->assertJsonPath('data.approval_status', Office::PENDING_STATUS);
+
+        Notification::assertSentTo($user, OfficePendingApproval::class);
 
         $this->assertDatabaseHas('offices', [
             'name' => 'office1'
@@ -254,10 +271,52 @@ class OfficeControllerTest extends TestCase
     }
 
     /** @test */
+    public function itUpdatesFeaturedImageOfOffice()
+    {
+        $user = User::factory()->create();
+        $office = Office::factory()->for($user)->create();
+
+        $this->actingAs($user);
+
+        $image = $office->images()->create([
+            'path' => 'image.png'
+        ]);
+
+        $response = $this->putJson("/api/offices/{$office->id}", [
+            'featured_image_id' => $image->id
+        ]);
+
+        $response->assertOk();
+        $this->assertNotNull($response->json('data.featured_image_id'));
+        $response->assertJsonPath('data.featured_image_id', $image->id);
+    }
+
+    /** @test */
+    public function itDoesNotUpdateAnotherOfficeFeaturedImage()
+    {
+        $user = User::factory()->create();
+        $office = Office::factory()->for($user)->create();
+        $anotherOffice = Office::factory()->for($user)->create();
+
+        $this->actingAs($user);
+
+        $image = $anotherOffice->images()->create([
+            'path' => 'image.png'
+        ]);
+
+        $response = $this->putJson("/api/offices/{$office->id}", [
+            'featured_image_id' => $image->id
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertStatus(422);
+    }
+
+    /** @test */
     public function itSetsApprovalStatusToPendingWhenUpdating()
     {
         Notification::fake();
-        $admin = User::factory()->create(['name' => 'Ahmed']);
+        $admin = User::factory()->create(['is_admin' => true]);
         $user = User::factory()->create();
         $office = Office::factory()->for($user)->create();
         $this->actingAs($user);

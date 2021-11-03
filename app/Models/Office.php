@@ -22,7 +22,6 @@ class Office extends Model
 
     const APPROVED_STATUS = 1;
     const PENDING_STATUS = 2;
-    const REJECTED_STATUS = 3;
 
     public function user()
     {

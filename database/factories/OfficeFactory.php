@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 
 class OfficeFactory extends Factory
 {
+    protected $model = Office::class;
     /**
      * Define the model's default state.
      *
@@ -27,5 +28,19 @@ class OfficeFactory extends Factory
             'price_per_day' => $this->faker->numberBetween(1_000, 2_000),
             'monthly_discount' => 0
         ];
+    }
+
+    public function pending()
+    {
+        return $this->state([
+            'approval_status' => Office::PENDING_STATUS
+        ]);
+    }
+
+    public function hidden()
+    {
+        return $this->state([
+            'hidden' => true
+        ]);
     }
 }
